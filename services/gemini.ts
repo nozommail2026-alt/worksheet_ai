@@ -1,8 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIResponse } from "../types";
-
-// The Google GenAI SDK initialization should use the process.env.API_KEY directly.
-// To ensure the most up-to-date environment values, we initialize the client inside each service call.
 
 export const generateEducationalContent = async (
   topic: string, 
@@ -11,16 +9,28 @@ export const generateEducationalContent = async (
   pageCount: number
 ): Promise<AIResponse> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `أنت خبير في تصميم المناهج التعليمية وتنسيق المذكرات. بناءً على المحتوى الخام التالي: "${rawContent}"، والموضوع العام: "${topic}" للمستوى: "${grade}".
-قم بتنظيم هذا المحتوى في مذكرة تعليمية احترافية ومنظمة جداً كمواضيع مرتبة.
-يجب أن تتكون المذكرة من عدد صفحات يساوي تماماً: ${pageCount} صفحات.
-الشروط:
-1. قسم المحتوى إلى ${pageCount} موضوع رئيسي، كل موضوع يخصص له صفحة واحدة مستقلة.
-2. لكل صفحة، اكتب عنوان الموضوع بشكل واضح وجذاب.
-3. نسق المحتوى داخل كل صفحة باستخدام HTML (h3 للعناوين الجانبية، p للشرح، ul/li للنقاط).
-4. تأكد من أن كل صفحة تحتوي على وجبة دسمة ومنظمة من المعلومات دون حشو.
-5. لكل صفحة، قدم وصفاً دقيقاً بالإنجليزية لصورة توضيحية (Image Prompt) تعبر عن موضوع هذه الصفحة تحديداً.
-يجب أن يكون الرد بتنسيق JSON حصراً.`;
+  const prompt = `أنت مصمم مناهج تعليمية عالمي. مهمتك تحويل النص الخام إلى مذكرة تعليمية احترافية جداً ومنظمة.
+الموضوع: "${topic}"، المستوى: "${grade}".
+يجب أن تتكون المذكرة من ${pageCount} صفحات بالضبط.
+
+لكل صفحة، قم بصياغة المحتوى بالتنسيق التالي:
+1. عنوان الصفحة: يجب أن يكون ملفتاً ومرتبطاً بالموضوع الفرعي.
+2. الأهداف (Objectives): قائمة نقطية قصيرة بما سيتعلمه الطالب في هذه الصفحة.
+3. المحتوى الرئيسي (Main Body): شرح منظم باستخدام (h3, p, ul, li). استخدم لغة تعليمية رصينة.
+4. قسم "هل تعلم" أو "معلومة إضافية": لإضفاء طابع احترافي.
+5. وصف الصورة (Image Prompt): وصف دقيق بالإنجليزية لصورة توضيحية عالية الجودة (3D, Cinematic, or Clean Vector) توضع في يسار الصفحة.
+
+يجب أن يكون الرد بتنسيق JSON حصراً:
+{
+  "title": "عنوان المذكرة الرئيسي",
+  "pages": [
+    {
+      "title": "عنوان الصفحة",
+      "content": "HTML content using h3, p, ul, li with professional sections",
+      "imagePrompt": "Detailed English prompt for the image"
+    }
+  ]
+}`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
@@ -50,11 +60,10 @@ export const generateEducationalContent = async (
   });
 
   try {
-    // Correctly using response.text property to extract output string.
     return JSON.parse(response.text || '{}') as AIResponse;
   } catch (e) {
     console.error("Failed to parse AI response", e);
-    throw new Error("حدث خطأ أثناء تحليل وتنظيم المحتوى.");
+    throw new Error("حدث خطأ أثناء تنظيم المحتوى بشكل احترافي.");
   }
 };
 
@@ -64,16 +73,15 @@ export const generatePageImage = async (prompt: string): Promise<string | undefi
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
-        parts: [{ text: `Professional educational 3D illustration, clean vector style, minimalist, soft lighting, educational icons, white background, high quality, subject: ${prompt}` }]
+        parts: [{ text: `High-end professional educational illustration, 3D render style, soft global illumination, masterpiece, minimalist composition, related to: ${prompt}` }]
       },
       config: {
         imageConfig: {
-          aspectRatio: "16:9"
+          aspectRatio: "3:4" // Portrait for side layout
         }
       }
     });
 
-    // Per guidelines, iterate through response parts to find image data.
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
         return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;

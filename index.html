@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DafterAI - مولد المذكرات التعليمية</title>
+    <title>DafterAI - منصة المذكرات الذكية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -15,25 +15,66 @@
         .no-print {
           display: none !important;
         }
-        .page-break {
-          page-break-after: always;
+        body {
+          background-color: white !important;
+        }
+        .page-container {
+          box-shadow: none !important;
+          margin: 0 !important;
+          border: none !important;
+        }
+        @page {
+          size: A4;
+          margin: 0;
         }
       }
-      .editor-content:focus {
-        outline: none;
+      
+      /* Professional Educational Content Styles */
+      .editor-content h2 {
+        font-size: 1.875rem;
+        font-weight: 900;
+        margin-bottom: 1.5rem;
+        color: #1e3a8a;
+        border-right: 4px solid #3b82f6;
+        padding-right: 1rem;
       }
-      ::-webkit-scrollbar {
-        width: 8px;
+      .editor-content h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: #334155;
       }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1;
+      .editor-content p {
+        margin-bottom: 1.25rem;
+        color: #475569;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
+      .editor-content ul {
+        list-style-type: none;
+        padding-right: 1.5rem;
+        margin-bottom: 1.5rem;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #555;
+      .editor-content li {
+        position: relative;
+        margin-bottom: 0.75rem;
+        padding-right: 1.5rem;
+      }
+      .editor-content li::before {
+        content: "•";
+        position: absolute;
+        right: 0;
+        color: #3b82f6;
+        font-weight: bold;
+        font-size: 1.5rem;
+        line-height: 1;
+      }
+
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
     </style>
   <script type="importmap">
