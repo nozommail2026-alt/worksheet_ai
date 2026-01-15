@@ -5,29 +5,40 @@ import { AIResponse } from "../types";
 export const generateEducationalContent = async (
   topic: string, 
   grade: string, 
-  rawContent: string,
-  pageCount: number
+  rawContent: string
 ): Promise<AIResponse> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `أنت مصمم مناهج تعليمية عالمي. مهمتك تحويل النص الخام إلى مذكرة تعليمية احترافية جداً ومنظمة.
-الموضوع: "${topic}"، المستوى: "${grade}".
-يجب أن تتكون المذكرة من ${pageCount} صفحات بالضبط.
+  
+  const prompt = `أنت بروفيسور خبير ومصمم جرافيك تعليمي متخصص في إنتاج مذكرات PDF عالمية المستوى.
+المهمة: تحويل المادة العلمية إلى مذكرة تعليمية احترافية تملأ صفحات A4 بالكامل دون أي فراغات ضائعة.
 
-لكل صفحة، قم بصياغة المحتوى بالتنسيق التالي:
-1. عنوان الصفحة: يجب أن يكون ملفتاً ومرتبطاً بالموضوع الفرعي.
-2. الأهداف (Objectives): قائمة نقطية قصيرة بما سيتعلمه الطالب في هذه الصفحة.
-3. المحتوى الرئيسي (Main Body): شرح منظم باستخدام (h3, p, ul, li). استخدم لغة تعليمية رصينة.
-4. قسم "هل تعلم" أو "معلومة إضافية": لإضفاء طابع احترافي.
-5. وصف الصورة (Image Prompt): وصف دقيق بالإنجليزية لصورة توضيحية عالية الجودة (3D, Cinematic, or Clean Vector) توضع في يسار الصفحة.
+قواعد "التصميم التعليمي الكثيف" (Design Learning Rules):
+1. املأ الصفحة بالكامل: إذا كان المحتوى الأصلي قصيراً، "يجب" عليك التوسع أكاديمياً عبر إضافة: (شرح عميق للمفاهيم، أمثلة واقعية، مقارنات بصرية، نصائح احترافية، تحليل للأخطاء الشائعة).
+2. هيكلية الصفحة: كل صفحة يجب أن تحتوي على:
+   - مقدمة "لماذا نتعلم هذا؟" (The Why).
+   - شرح بجمال قصيرة (Short sentences only).
+   - صناديق "إضاءة" (Insight Box) و "نصيحة ذهبية" (Pro Tip).
+   - قسم "تحدي سريع" في نهاية كل صفحة (2 MCQ + 1 T/F).
+3. الصفحة الختامية (إلزامية): يجب أن تكون الصفحة الأخيرة في المصفوفة بعنوان "الاختبار الشامل للمذكرة" وتحتوي على:
+   - 5 أسئلة اختيار من متعدد (MCQ) تغطي المذكرة بالكامل.
+   - 5 أسئلة صح وخطأ (T/F) شاملة.
+   - ملخص "الخلاصة في نقاط".
+4. الهوية البصرية: استخدم h2 للعناوين الرئيسية، h3 للفرعية، وقوائم نقطية. صف صوراً ذكية في imagePrompt ليتم وضعها بوضعية "عائمة" (Float).
+
+الموضوع: "${topic}" | المرحلة: "${grade}"
+المادة الخام:
+"""
+${rawContent}
+"""
 
 يجب أن يكون الرد بتنسيق JSON حصراً:
 {
-  "title": "عنوان المذكرة الرئيسي",
+  "title": "عنوان المذكرة الجذاب",
   "pages": [
     {
-      "title": "عنوان الصفحة",
-      "content": "HTML content using h3, p, ul, li with professional sections",
-      "imagePrompt": "Detailed English prompt for the image"
+      "title": "عنوان الدرس",
+      "content": "HTML كثيف جداً يتضمن (h2, p, insight-box, pro-tip, quiz-section). تأكد من ملء الفراغات تماماً.",
+      "imagePrompt": "Professional 3D educational icon, clean background, related to ${topic}"
     }
   ]
 }`;
@@ -36,6 +47,7 @@ export const generateEducationalContent = async (
     model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
+      thinkingConfig: { thinkingBudget: 32000 },
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -60,10 +72,10 @@ export const generateEducationalContent = async (
   });
 
   try {
-    return JSON.parse(response.text || '{}') as AIResponse;
+    const text = response.text;
+    return JSON.parse(text || '{}') as AIResponse;
   } catch (e) {
-    console.error("Failed to parse AI response", e);
-    throw new Error("حدث خطأ أثناء تنظيم المحتوى بشكل احترافي.");
+    throw new Error("فشل في توليد المذكرة الكثيفة. يرجى التأكد من المادة العلمية.");
   }
 };
 
@@ -73,22 +85,13 @@ export const generatePageImage = async (prompt: string): Promise<string | undefi
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
-        parts: [{ text: `High-end professional educational illustration, 3D render style, soft global illumination, masterpiece, minimalist composition, related to: ${prompt}` }]
+        parts: [{ text: `${prompt} | Educational diagram, minimalist 3D, white background.` }]
       },
-      config: {
-        imageConfig: {
-          aspectRatio: "3:4" // Portrait for side layout
-        }
-      }
+      config: { imageConfig: { aspectRatio: "1:1" } }
     });
-
     for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
+      if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
-  } catch (e) {
-    console.error("Image generation failed", e);
-  }
+  } catch (e) {}
   return undefined;
 };

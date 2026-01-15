@@ -1,48 +1,51 @@
-
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import PageEditor from './components/PageEditor';
 import { NotePage, BrandConfig } from './types';
 import { generateEducationalContent, generatePageImage } from './services/gemini';
-import { Loader2, Plus, Sparkles, BookOpen, Trash2, Layers, PencilLine } from 'lucide-react';
+import { Loader2, Sparkles, Trash2, X, Layers } from 'lucide-react';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState('');
   const [grade, setGrade] = useState('');
   const [rawContent, setRawContent] = useState('');
-  const [pageCount, setPageCount] = useState(3);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showHTMLModal, setShowHTMLModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const [brand, setBrand] = useState<BrandConfig>({
     name: 'الأستاذ المتميز',
     theme: 'professional',
     primaryColor: '#1e3a8a',
-    secondaryColor: '#1d4ed8',
-    fontFamily: 'Cairo'
+    secondaryColor: '#0f172a',
+    fontFamily: 'Tajawal'
   });
 
   const [pages, setPages] = useState<NotePage[]>([
     {
       id: 'welcome',
-      title: 'مذكرة تعليمية ذكية',
-      content: '<h2>مرحباً بك في المحرر الاحترافي الجديد! 🚀</h2><p>تم تحديث المنصة لتشمل أدوات تعديل متطورة. يمكنك الآن:</p><ul><li>إدراج صناديق معلومات ملونة وجذابة من شريط الأدوات العائم.</li><li>استخدام نظام التراجع والإعادة (Undo/Redo) لضمان دقة العمل.</li><li>توليد صور ذكية لكل موضوع بشكل مستقل ومنظم.</li></ul><p>جرب الآن إضافة <strong>صندوق تعريف</strong> أو <strong>صندوق ملاحظات</strong> من الأعلى!</p>',
-      footer: 'DafterAI Pro'
+      title: 'مرحباً بك',
+      content: `<h2>أهلاً بك في الإصدار الإبداعي لـ DafterAI 🎓</h2>
+      <p>لقد قمنا بتحديث النظام ليتبع مبادئ التصميم التعليمي العالمية. كل صفحة ستكون الآن غنية، منظمة، وتفاعلية.</p>
+      <div class="insight-box">💡 <b>ما الجديد؟</b> المحتوى الآن يتضمن أسئلة MCQ وصح وخطأ تلقائياً لضمان تفاعل الطالب.</div>
+      <div class="pro-tip">⭐ <b>نصيحة التصميم:</b> الصورة الآن تلتف حولها النصوص لضمان استغلال كل مليمتر في الورقة.</div>
+      <div class="quiz-section">
+        <h3 style="margin:0 0 10px 0; font-size:1rem; color:#1e3a8a;">اختبر مهاراتك (مثال):</h3>
+        <div class="mcq-item">١. أي من المزايا التالية هي الأهم في DafterAI؟ <br/> <span class="option">أ. السرعة</span> <span class="option">ب. التصميم البصري</span> <span class="option">ج. التفاعل</span></div>
+        <div class="tf-item"><span>توليد الأسئلة يتم تلقائياً</span> <span>[صح / خطأ]</span></div>
+      </div>`,
+      footer: brand.name
     }
   ]);
 
   const handleGenerate = async () => {
-    if (!topic || !rawContent) {
-      alert("يرجى إدخال الموضوع والمحتوى العلمي");
-      return;
-    }
-
+    if (!topic || !rawContent) return;
     setLoading(true);
     try {
-      const aiData = await generateEducationalContent(topic, grade, rawContent, pageCount);
+      const aiData = await generateEducationalContent(topic, grade, rawContent);
       const processedPages: NotePage[] = [];
-      
-      for (const [index, p] of aiData.pages.entries()) {
+      for (const p of aiData.pages) {
         const imageUrl = await generatePageImage(p.imagePrompt);
         processedPages.push({
           id: Math.random().toString(36).substr(2, 9),
@@ -52,7 +55,6 @@ const App: React.FC = () => {
           footer: brand.name
         });
       }
-
       setPages(processedPages);
       setShowGenerateModal(false);
     } catch (error: any) {
@@ -62,190 +64,92 @@ const App: React.FC = () => {
     }
   };
 
-  const updatePage = (id: string, updatedPage: NotePage) => {
-    setPages(prev => prev.map(p => p.id === id ? updatedPage : p));
+  const handlePageSplit = (pageIndex: number, excessHtml: string) => {
+    const newPages = [...pages];
+    newPages.splice(pageIndex + 1, 0, {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'تكملة المادة',
+      content: excessHtml,
+      footer: brand.name
+    });
+    setPages(newPages);
   };
 
-  const addPage = () => {
-    setPages([...pages, {
-      id: Math.random().toString(36).substr(2, 9),
-      title: 'صفحة جديدة',
-      content: '<p>اكتب هنا...</p>',
-      footer: brand.name
-    }]);
+  const generateFullHTML = () => {
+    const pagesHTML = pages.map((page, index) => `
+      <div style="width: 210mm; height: 297mm; background: white; margin: 40px auto; padding: 15mm; direction: rtl; font-family: 'Tajawal', sans-serif; position: relative; border-bottom: 5px solid ${brand.primaryColor}">
+         <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 11px; font-weight: 900; color: ${brand.primaryColor};">${brand.name}</div>
+            <div style="font-size: 10px; font-weight: 900; color: #cbd5e1;">صفحة ${index + 1}</div>
+         </div>
+         <div class="editor-content" style="font-size: 16px; line-height: 1.5; color: #0f172a;">
+           ${page.imageUrl ? `<img src="${page.imageUrl}" style="float:left; width:25%; margin:0 15px 10px 0; border-radius:10px;" />` : ''}
+           ${page.content}
+         </div>
+      </div>`).join('');
+    return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet"><style>.editor-content h2{font-weight:900; color:#1e3a8a; border-right:4px solid; padding-right:12px; margin-bottom:15px} .quiz-section{background:#f8fafc; border:2px solid #e2e8f0; padding:15px; border-radius:12px; margin-top:20px} .insight-box{background:#eff6ff; border-right:4px solid #3b82f6; padding:10px; border-radius:8px; margin:15px 0}</style></head><body>${pagesHTML}</body></html>`;
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-row-reverse font-['Cairo']">
+    <div className="min-h-screen bg-slate-100 flex flex-row-reverse overflow-hidden">
       <Sidebar 
-        brand={brand} 
-        setBrand={setBrand} 
-        onGenerate={() => setShowGenerateModal(true)}
-        loading={loading}
-        onExport={() => window.print()}
-        onAddPage={addPage}
-        onClear={() => setPages([])}
+        brand={brand} setBrand={setBrand} onGenerate={() => setShowGenerateModal(true)}
+        loading={loading} onExport={() => window.print()}
+        onAddPage={() => setPages([...pages, { id: Date.now().toString(), title: 'جديدة', content: '<p>اكتب هنا...</p>', footer: brand.name }])}
+        onClear={() => confirm("مسح المذكرة؟") && setPages([])}
+        onShowHTML={() => setShowHTMLModal(true)}
       />
 
-      <main className="flex-1 mr-80 p-12 flex flex-col items-center overflow-y-auto h-screen no-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
-        {pages.length === 0 ? (
-          <div className="mt-40 text-center animate-in zoom-in duration-700">
-            <div className="bg-white p-16 rounded-[3rem] shadow-2xl max-w-md border border-gray-100 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -z-10" />
-               <PencilLine className="w-16 h-16 text-indigo-600 mx-auto mb-6" />
-               <h2 className="text-3xl font-black text-gray-800">محرر المذكرات الذكي</h2>
-               <p className="text-gray-500 mt-3 mb-10 leading-relaxed font-medium">ابدأ بتوليد المحتوى أو أضف صفحات يدوياً وابدأ في استخدام أدواتنا الاحترافية.</p>
-               <button 
-                 onClick={() => setShowGenerateModal(true)}
-                 className="bg-indigo-600 text-white px-12 py-5 rounded-[1.5rem] font-bold hover:bg-indigo-700 transition-all flex items-center gap-3 mx-auto shadow-2xl shadow-indigo-200 hover:-translate-y-1 active:scale-95"
-               >
-                 <Sparkles className="w-6 h-6" /> توليد الآن
-               </button>
+      <main className="flex-1 mr-80 p-6 overflow-y-auto h-screen bg-slate-200">
+        <div className="space-y-16 pb-96 w-full max-w-[210mm] mx-auto">
+          {pages.map((page, index) => (
+            <div key={page.id} className="relative group">
+              <PageEditor 
+                page={page} brand={brand} pageNumber={index + 1} 
+                onUpdate={(up) => setPages(pages.map(p => p.id === page.id ? up : p))} 
+                onSplit={(ex) => handlePageSplit(index, ex)}
+              />
+              <button onClick={() => setPages(pages.filter(p => p.id !== page.id))} className="no-print absolute -left-12 top-0 bg-white text-red-500 p-3 rounded-full shadow opacity-0 group-hover:opacity-100 transition-all cursor-pointer border-none">
+                <Trash2 size={20} />
+              </button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-20 pb-40 w-full max-w-[210mm]">
-            {pages.map((page, index) => (
-              <div key={page.id} className="relative group animate-in slide-in-from-bottom-5 duration-500">
-                <PageEditor 
-                  page={page} 
-                  brand={brand} 
-                  pageNumber={index + 1}
-                  onUpdate={(updated) => updatePage(page.id, updated)}
-                />
-                <button 
-                  onClick={() => setPages(pages.filter(p => p.id !== page.id))}
-                  className="no-print absolute top-10 -right-20 bg-white text-red-400 p-4 rounded-3xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-xl border border-gray-100"
-                  title="حذف الصفحة"
-                >
-                  <Trash2 size={24} />
-                </button>
-              </div>
-            ))}
+          ))}
+        </div>
+      </main>
 
-            <div className="no-print flex justify-center py-10">
-              <button 
-                onClick={addPage}
-                className="group bg-white/50 backdrop-blur-sm border-2 border-dashed border-gray-300 text-gray-400 px-12 py-6 rounded-[2rem] flex flex-col items-center gap-2 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-500 transition-all w-full"
-              >
-                <Plus className="w-8 h-8 group-hover:scale-125 transition-transform" />
-                <span className="font-black">إضافة صفحة يدوية جديدة</span>
+      {showGenerateModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6">
+          <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-white">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                <Sparkles className="text-indigo-600" size={28} /> تأليف مذكرة تفاعلية
+              </h2>
+              <button onClick={() => setShowGenerateModal(false)} className="text-slate-300 hover:text-slate-900 border-none bg-transparent cursor-pointer"><X size={28} /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input type="text" value={topic} onChange={(e) => setTopic(e.target.value)} className="w-full px-5 py-3 rounded-xl bg-slate-50 border-2 border-slate-100 outline-none font-bold" placeholder="الموضوع" />
+                <input type="text" value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full px-5 py-3 rounded-xl bg-slate-50 border-2 border-slate-100 outline-none font-bold" placeholder="الصف" />
+              </div>
+              <textarea value={rawContent} onChange={(e) => setRawContent(e.target.value)} className="w-full px-5 py-3 rounded-xl bg-slate-50 border-2 border-slate-100 outline-none h-40 font-medium resize-none" placeholder="الصق المادة العلمية هنا... سيتولى الذكاء الاصطناعي تحويلها لتحفة فنية تعليمية." />
+              <button onClick={handleGenerate} disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-50 border-none cursor-pointer">
+                {loading ? <Loader2 className="animate-spin" /> : <Layers size={20} />}
+                {loading ? "جاري التصميم..." : "بدء التوليد الإبداعي"}
               </button>
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
 
-      {/* Modal is unchanged in logic but UI can be subtlely improved if needed */}
-      {showGenerateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-[3rem] p-12 max-w-3xl w-full shadow-[0_0_100px_rgba(0,0,0,0.2)] relative animate-in zoom-in-95 duration-500 overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-bl-full -z-10" />
-            
-            <div className="flex justify-between items-start mb-10">
-              <div>
-                <h2 className="text-4xl font-black text-gray-800 flex items-center gap-4">
-                  <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
-                    <Sparkles className="w-8 h-8 text-white" />
-                  </div>
-                  مولد المذكرات الذكي
-                </h2>
-                <p className="text-gray-400 mt-2 font-bold tracking-tight">نحول أفكارك لمحتوى تعليمي بصري فائق الجودة</p>
-              </div>
-              <button onClick={() => setShowGenerateModal(false)} className="bg-gray-100 hover:bg-red-50 hover:text-red-500 p-3 rounded-2xl transition-all font-black text-3xl leading-none">&times;</button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6 mb-8">
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-xs font-black text-gray-400 mb-2 uppercase mr-1">المادة العلمية</label>
-                <input 
-                  type="text"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-full px-6 py-5 bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-[1.5rem] outline-none transition-all font-bold"
-                  placeholder="مثال: علم النفس الاجتماعي"
-                />
-              </div>
-              <div className="col-span-2 md:col-span-1">
-                <label className="block text-xs font-black text-gray-400 mb-2 uppercase mr-1">الصف الدراسي</label>
-                <input 
-                  type="text"
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full px-6 py-5 bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-[1.5rem] outline-none transition-all font-bold"
-                  placeholder="مثال: الثالث الثانوي"
-                />
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <label className="block text-xs font-black text-gray-400 mb-2 uppercase mr-1 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-indigo-500" /> عدد الصفحات المطلوبة ({pageCount})
-              </label>
-              <div className="flex items-center gap-6 bg-gray-50 p-6 rounded-[1.5rem]">
-                <input 
-                  type="range" 
-                  min="1" 
-                  max="10" 
-                  value={pageCount} 
-                  onChange={(e) => setPageCount(parseInt(e.target.value))}
-                  className="flex-1 h-3 accent-indigo-600 rounded-lg appearance-none cursor-pointer bg-gray-200"
-                />
-                <div className="w-14 h-14 flex items-center justify-center bg-indigo-600 text-white rounded-2xl font-black text-xl shadow-lg shadow-indigo-100">
-                  {pageCount}
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-10">
-              <label className="block text-xs font-black text-gray-400 mb-2 uppercase mr-1">المحتوى الخام (النص التعليمي)</label>
-              <textarea 
-                value={rawContent}
-                onChange={(e) => setRawContent(e.target.value)}
-                className="w-full px-6 py-5 bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-[1.5rem] outline-none transition-all h-56 resize-none leading-relaxed font-medium"
-                placeholder="الصق نص الدرس أو الملاحظات هنا... سنتولى نحن الباقي."
-              />
-            </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className={`w-full py-6 rounded-[1.5rem] font-black text-2xl transition-all shadow-2xl flex items-center justify-center gap-4 ${
-                loading 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:scale-[1.01] active:scale-95 shadow-indigo-200'
-              }`}
-            >
-              {loading ? <Loader2 className="animate-spin w-8 h-8" /> : <Sparkles className="w-8 h-8" />}
-              {loading ? "جاري التصميم والتوليد..." : "تحويل المحتوى لمذكرة احترافية"}
-            </button>
-            
-            {loading && (
-              <div className="mt-6 flex flex-col items-center gap-2">
-                 <p className="text-indigo-600 font-black animate-pulse">نحن الآن نخطط الصفحات، نصمم الأيقونات، وننظم المعلومات...</p>
-                 <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-indigo-500 h-full animate-[loading_20s_ease-in-out_infinite]" style={{ width: '40%' }}></div>
-                 </div>
-              </div>
-            )}
+      {showHTMLModal && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/90 p-10">
+          <div className="bg-white w-full max-w-4xl h-[80vh] rounded-[2rem] flex flex-col overflow-hidden">
+            <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-black">كود HTML</h2><button onClick={() => setShowHTMLModal(false)} className="border-none bg-transparent cursor-pointer"><X size={24} /></button></div>
+            <textarea readOnly className="flex-1 p-6 bg-slate-950 text-indigo-300 font-mono text-xs outline-none resize-none border-none" value={generateFullHTML()} />
+            <div className="p-4 bg-slate-50 flex justify-end"><button onClick={() => {navigator.clipboard.writeText(generateFullHTML()); setCopied(true); setTimeout(()=>setCopied(false), 2000)}} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black border-none cursor-pointer">{copied ? "تم النسخ" : "نسخ الكود"}</button></div>
           </div>
         </div>
       )}
-      
-      <style>{`
-        @keyframes loading {
-          0% { width: 0%; }
-          50% { width: 70%; }
-          100% { width: 100%; }
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 };

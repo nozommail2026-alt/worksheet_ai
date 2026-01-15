@@ -10,30 +10,40 @@ export const THEMES: Record<ThemeType, {
 }> = {
   professional: {
     name: 'الاحترافي',
-    primary: '#1e3a8a', // blue-900
-    secondary: '#1d4ed8', // blue-700
+    primary: '#1e3a8a',
+    secondary: '#1d4ed8',
     bg: '#ffffff',
-    accent: '#fbbf24' // amber-400
+    accent: '#fbbf24'
   },
   creative: {
     name: 'الإبداعي',
-    primary: '#7c3aed', // violet-600
-    secondary: '#db2777', // pink-600
+    primary: '#7c3aed',
+    secondary: '#db2777',
     bg: '#faf5ff',
-    accent: '#22d3ee' // cyan-400
+    accent: '#22d3ee'
   },
   academic: {
     name: 'الأكاديمي',
-    primary: '#065f46', // emerald-900
-    secondary: '#047857', // emerald-700
+    primary: '#065f46',
+    secondary: '#047857',
     bg: '#f0fdf4',
-    accent: '#84cc16' // lime-500
+    accent: '#84cc16'
   },
   modern: {
     name: 'العصري',
-    primary: '#111827', // gray-900
-    secondary: '#4b5563', // gray-600
+    primary: '#111827',
+    secondary: '#4b5563',
     bg: '#f9fafb',
-    accent: '#f97316' // orange-500
+    accent: '#f97316'
   }
 };
+
+export const ARABIC_FONTS = [
+  { id: 'Tajawal', name: 'تجول (عصري)' },
+  { id: 'Cairo', name: 'كايرو (كلاسيكي)' },
+  { id: 'Amiri', name: 'الأميري (خط الرقعة)' },
+  { id: 'Noto Sans Arabic', name: 'نوتو (نظيف)' },
+  { id: 'Vazirmatn', name: 'وزير (تقني)' },
+  { id: 'Lalezar', name: 'لاليزار (عريض)' },
+  { id: 'Scheherazade New', name: 'شهرزاد (تراثي)' }
+];
