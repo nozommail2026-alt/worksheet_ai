@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
@@ -25,21 +24,22 @@
           width: 210mm !important;
           height: 297mm !important;
           page-break-after: always;
+          border-bottom: none !important;
         }
       }
       
       .editor-content {
         color: #0f172a !important; 
-        font-size: 0.92rem;
-        line-height: 1.5;
+        font-size: 0.95rem;
+        line-height: 1.6;
         text-align: justify;
       }
 
       .page-image-float {
         float: left;
-        width: 32%;
-        max-width: 200px;
-        margin: 0 15px 12px 0;
+        width: 30%;
+        max-width: 180px;
+        margin: 0 15px 10px 0;
         border-radius: 12px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
@@ -48,48 +48,49 @@
 
       .editor-content h2 {
         font-family: 'Cairo', sans-serif;
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 900;
-        margin: 0.4rem 0 0.6rem 0;
+        margin: 0.5rem 0 0.8rem 0;
         color: #1e3a8a;
-        border-right: 5px solid #1e3a8a;
-        padding-right: 10px;
-        background: #f8fafc;
+        border-right: 6px solid #1e3a8a;
+        padding-right: 12px;
+        background: #f1f5f9;
         display: block;
       }
 
       .editor-content h3 {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         font-weight: 800;
-        margin-top: 0.7rem;
+        margin-top: 1rem;
         color: #334155;
       }
 
       .editor-content p {
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.8rem;
       }
 
       .quiz-section {
-        margin-top: 1rem;
-        padding: 0.7rem;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
         page-break-inside: avoid;
       }
       
       .mcq-item {
-        margin-bottom: 0.4rem;
-        font-size: 0.85rem;
+        margin-bottom: 0.6rem;
+        font-size: 0.88rem;
+        font-weight: 600;
       }
       
       .option {
         display: inline-block;
-        padding: 1px 6px;
+        padding: 2px 8px;
         border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        margin-left: 4px;
-        font-size: 0.75rem;
+        border-radius: 5px;
+        margin-left: 6px;
+        font-size: 0.8rem;
         background: white;
       }
 
@@ -98,26 +99,36 @@
         justify-content: space-between;
         align-items: center;
         border-bottom: 1px dashed #cbd5e1;
-        padding: 3px 0;
-        font-size: 0.85rem;
+        padding: 5px 0;
+        font-size: 0.88rem;
       }
 
       .insight-box {
         background: #eff6ff;
-        border-right: 4px solid #3b82f6;
-        padding: 10px;
-        border-radius: 6px;
-        margin: 0.7rem 0;
-        font-size: 0.88rem;
+        border-right: 5px solid #3b82f6;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-size: 0.92rem;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
       }
 
       .pro-tip {
         background: #fffbeb;
-        border-right: 4px solid #f59e0b;
-        padding: 8px;
-        border-radius: 6px;
-        font-size: 0.82rem;
+        border-right: 5px solid #f59e0b;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 0.85rem;
         font-weight: bold;
+      }
+
+      .case-study {
+        background: #fdf2f8;
+        border-right: 5px solid #db2777;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-size: 0.9rem;
       }
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
