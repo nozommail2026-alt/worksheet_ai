@@ -8,6 +8,8 @@ export interface BrandConfig {
   secondaryColor: string;
   logoUrl?: string;
   fontFamily: string;
+  headerTopGap: number; // in mm
+  headerContentGap: number; // in mm
 }
 
 export interface NotePage {
@@ -16,6 +18,7 @@ export interface NotePage {
   content: string;
   imageUrl?: string;
   footer: string;
+  isCover?: boolean;
 }
 
 export interface AIResponse {
@@ -24,5 +27,6 @@ export interface AIResponse {
     title: string;
     content: string;
     imagePrompt: string;
+    isCover?: boolean;
   }>;
 }

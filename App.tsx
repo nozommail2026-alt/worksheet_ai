@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import PageEditor from './components/PageEditor';
 import { NotePage, BrandConfig } from './types';
 import { generateEducationalContent, generatePageImage } from './services/gemini';
-import { Loader2, Sparkles, Trash2, X, Layers } from 'lucide-react';
+import { Loader2, Sparkles, Trash2, X, Layers, FileText, CheckCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -13,30 +14,26 @@ const App: React.FC = () => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showHTMLModal, setShowHTMLModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [wordCopied, setWordCopied] = useState(false);
   
   const [brand, setBrand] = useState<BrandConfig>({
     name: 'الأستاذ المتميز',
     theme: 'professional',
     primaryColor: '#1e3a8a',
     secondaryColor: '#0f172a',
-    fontFamily: 'Tajawal'
+    fontFamily: 'Tajawal',
+    headerTopGap: 8,
+    headerContentGap: 6
   });
 
   const [pages, setPages] = useState<NotePage[]>([
     {
       id: 'welcome',
-      title: 'مرحباً بك',
-      content: `<h2>أهلاً بك في الإصدار الأقصى لـ DafterAI 🎓</h2>
-      <p>لقد قمنا بتحديث النظام ليقوم بملء الفراغات تلقائياً وضمان مظهر احترافي ممتلئ للمذكرات.</p>
-      <div class="insight-box">💡 <b>الذكاء الاصطناعي الآن:</b> سيقوم بإنتاج محتوى إضافي (شرح، تحليل، قصص) لضمان عدم وجود فراغات بيضاء في أسفل الورقة.</div>
-      <div class="pro-tip">⭐ <b>نصيحة:</b> اضغط على "توليد مذكرة كاملة" وشاهد كيف يمتلئ المحتوى بالتفاصيل الدقيقة.</div>
-      <div class="case-study"><b>📚 حالة دراسية:</b> عند استخدام المذكرات الكثيفة، تزداد نسبة تركيز الطالب بنسبة ٤٠٪ بفضل التفاعل المستمر مع الأسئلة المدمجة.</div>
-      <div class="quiz-section">
-        <h3 style="margin:0 0 10px 0; font-size:1rem; color:#1e3a8a;">تحدي سريع للفهم:</h3>
-        <div class="mcq-item">١. كيف يضمن النظام ملء الفراغات؟ <br/> <span class="option">أ. بتكبير الخط</span> <span class="option">ب. بإنتاج محتوى إضافي ذكي</span> <span class="option">ج. بترك مساحات</span></div>
-        <div class="tf-item"><span>النظام يدعم الطباعة المباشرة</span> <span>[صح / خطأ]</span></div>
-      </div>`,
-      footer: brand.name
+      title: 'مذكرتك التعليمية',
+      isCover: true,
+      content: `مرحباً بك في عصر المذكرات الذكية. نحن بانتظار إبداعك.`,
+      footer: brand.name,
+      imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1000'
     }
   ]);
 
@@ -53,7 +50,8 @@ const App: React.FC = () => {
           title: p.title,
           content: p.content,
           imageUrl: imageUrl,
-          footer: brand.name
+          footer: brand.name,
+          isCover: p.isCover
         });
       }
       setPages(processedPages);
@@ -65,33 +63,82 @@ const App: React.FC = () => {
     }
   };
 
-  const handlePageSplit = (pageIndex: number, excessHtml: string) => {
-    const newPages = [...pages];
-    newPages.splice(pageIndex + 1, 0, {
-      id: Math.random().toString(36).substr(2, 9),
-      title: 'تكملة المادة',
-      content: excessHtml,
-      footer: brand.name
-    });
-    setPages(newPages);
+  const copyForWord = async () => {
+    const wordHtml = pages.map((page, index) => {
+      if (page.isCover) {
+        return `
+          <div style="width: 100%; font-family: 'Segoe UI', Arial, sans-serif; direction: rtl; text-align: center; padding-top: 100px; padding-bottom: 100px; border-bottom: 2px solid #eee;">
+            <h2 style="color: ${brand.primaryColor}; font-size: 14pt; font-weight: bold;">${brand.name}</h2>
+            ${page.imageUrl ? `<p><img src="${page.imageUrl}" width="500" style="margin: 30px 0; border-radius: 20px;" /></p>` : ''}
+            <h1 style="font-size: 36pt; margin: 20px 0;">${page.title}</h1>
+            <p style="font-size: 14pt; color: #666;">${page.content}</p>
+          </div>
+        `;
+      }
+      return `
+        <div style="width: 100%; font-family: 'Segoe UI', Arial, sans-serif; direction: rtl; border-bottom: 2px solid #eee; padding-bottom: 40px; margin-bottom: 40px; padding-top: 40px;">
+          <p style="font-size: 10pt; color: #999; text-align: left;">DafterAI • صفحة ${index + 1}</p>
+          <div style="padding-top: ${brand.headerTopGap}mm;">
+            <h1 style="color: ${brand.primaryColor}; font-size: 18pt; border-bottom: 3px solid ${brand.primaryColor}; padding-bottom: 5px;">${page.title}</h1>
+          </div>
+          <div style="font-size: 12pt; line-height: 1.6; text-align: justify; padding-top: ${brand.headerContentGap}mm;">
+            ${page.imageUrl ? `<img src="${page.imageUrl}" width="200" style="float: left; margin-right: 15px; margin-bottom: 10px;" />` : ''}
+            ${page.content.replace(/class="insight-box"/g, 'style="background: #eff6ff; border-right: 5px solid #3b82f6; padding: 15px; margin: 15px 0;"')
+                         .replace(/class="pro-tip"/g, 'style="background: #fffbeb; border-right: 5px solid #f59e0b; padding: 10px; margin: 10px 0; font-weight: bold;"')
+                         .replace(/class="quiz-section"/g, 'style="background: #f8fafc; border: 1px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 10px;"')
+                         .replace(/class="case-study"/g, 'style="background: #fdf2f8; border-right: 5px solid #db2777; padding: 12px; margin: 15px 0;"')
+                         .replace(/class="option"/g, 'style="display: inline-block; padding: 2px 8px; border: 1px solid #ccc; background: white; margin-left: 5px; font-size: 10pt;"')
+            }
+          </div>
+          <p style="font-size: 9pt; color: #ccc; margin-top: 30px;">براند: ${brand.name} • تم التوليد بواسطة DafterAI</p>
+        </div>
+      `;
+    }).join('');
+
+    const fullHtml = `<html><head><meta charset="UTF-8"></head><body style="padding: 20px;">${wordHtml}</body></html>`;
+    
+    try {
+      const type = "text/html";
+      const blob = new Blob([fullHtml], { type });
+      const data = [new ClipboardItem({ [type]: blob })];
+      await navigator.clipboard.write(data);
+      setWordCopied(true);
+      setTimeout(() => setWordCopied(false), 3000);
+    } catch (err) {
+      navigator.clipboard.writeText(fullHtml);
+      alert("تم نسخ الكود بنجاح.");
+    }
   };
 
   const generateFullHTML = () => {
-    const pagesHTML = pages.map((page, index) => `
-      <div class="page-container" style="width: 210mm; height: 297mm; background: white; margin: 20px auto; padding: 15mm; direction: rtl; font-family: '${brand.fontFamily}', sans-serif; position: relative; border-bottom: 5px solid ${brand.primaryColor}; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; page-break-after: always;">
-         <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 13px; font-weight: 900; color: ${brand.primaryColor};">${brand.name}</div>
-            <div style="font-size: 11px; font-weight: 900; color: #cbd5e1;">صفحة ${index + 1}</div>
-         </div>
-         <div class="editor-content" style="font-size: 16px; line-height: 1.7; color: #0f172a; text-align: justify;">
-           ${page.imageUrl ? `<img src="${page.imageUrl}" style="float:left; width:30%; margin:0 15px 10px 0; border-radius:12px; border: 1px solid #eee; shape-outside: margin-box; box-shadow: 0 2px 5px rgba(0,0,0,0.05);" />` : ''}
-           ${page.content}
-         </div>
-         <div style="position: absolute; bottom: 10mm; left: 15mm; right: 15mm; border-top: 1px solid #eee; padding-top: 8px; display: flex; justify-content: space-between; opacity: 0.6; font-size: 9px; font-weight: 800;">
-            <div>DafterAI Professional Learning System</div>
-            <div style="text-transform: uppercase;">${brand.name} • ٢٠٢٥</div>
-         </div>
-      </div>`).join('');
+    const pagesHTML = pages.map((page, index) => {
+      if (page.isCover) {
+        return `
+          <div class="page-container" style="width: 210mm; height: 297mm; background: white; margin: 20px auto; padding: 15mm; direction: rtl; font-family: '${brand.fontFamily}', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 5px solid ${brand.primaryColor}; box-shadow: 0 0 20px rgba(0,0,0,0.1); page-break-after: always;">
+            <div style="font-size: 24px; font-weight: 900; color: ${brand.primaryColor}; margin-bottom: 20px;">${brand.name}</div>
+            ${page.imageUrl ? `<img src="${page.imageUrl}" style="width: 80%; border-radius: 30px; margin-bottom: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);" />` : ''}
+            <h1 style="font-size: 60px; margin-bottom: 20px; color: #0f172a;">${page.title}</h1>
+            <div style="font-size: 24px; color: #64748b;">${page.content}</div>
+          </div>
+        `;
+      }
+      return `
+        <div class="page-container" style="width: 210mm; height: 297mm; background: white; margin: 20px auto; padding: 15mm; direction: rtl; font-family: '${brand.fontFamily}', sans-serif; position: relative; border-bottom: 5px solid ${brand.primaryColor}; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; page-break-after: always;">
+           <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-top: ${brand.headerTopGap}mm; margin-bottom: ${brand.headerContentGap}mm; display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 13px; font-weight: 900; color: ${brand.primaryColor};">${brand.name}</div>
+              <div style="font-size: 11px; font-weight: 900; color: #cbd5e1;">صفحة ${index + 1}</div>
+           </div>
+           <div class="editor-content" style="font-size: 16px; line-height: 1.7; color: #0f172a; text-align: justify;">
+             ${page.imageUrl ? `<img src="${page.imageUrl}" style="float:left; width:30%; margin:0 15px 10px 0; border-radius:12px; border: 1px solid #eee; shape-outside: margin-box;" />` : ''}
+             ${page.content}
+           </div>
+           <div style="position: absolute; bottom: 10mm; left: 15mm; right: 15mm; border-top: 1px solid #eee; padding-top: 8px; display: flex; justify-content: space-between; opacity: 0.6; font-size: 9px; font-weight: 800;">
+              <div>DafterAI Professional Learning System</div>
+              <div style="text-transform: uppercase;">${brand.name} • ٢٠٢٥</div>
+           </div>
+        </div>
+      `;
+    }).join('');
 
     return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -109,18 +156,11 @@ const App: React.FC = () => {
         .option { display: inline-block; padding: 2px 8px; border: 1px solid #cbd5e1; border-radius: 5px; margin-left: 5px; font-size: 12px; background: white; }
         .mcq-item { margin-bottom: 12px; font-weight: 600; }
         .tf-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 8px 0; }
-        
         .toolbar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 12px 30px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); display: flex; gap: 15px; z-index: 9999; border: 1px solid #eee; }
-        .btn { border: none; padding: 12px 24px; border-radius: 25px; font-weight: 900; cursor: pointer; transition: all 0.2s; font-family: 'Tajawal', sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn { border: none; padding: 12px 24px; border-radius: 25px; font-weight: 900; cursor: pointer; transition: all 0.2s; font-family: 'Tajawal', sans-serif; }
         .btn-print { background: #10b981; color: white; }
         .btn-edit { background: #1e3a8a; color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
-
-        @media print {
-            .toolbar { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .page-container { margin: 0 !important; box-shadow: none !important; border-bottom: none !important; }
-        }
+        @media print { .toolbar { display: none !important; } body { background: white !important; padding: 0 !important; } .page-container { margin: 0 !important; box-shadow: none !important; border-bottom: none !important; } }
     </style>
 </head>
 <body>
@@ -128,11 +168,7 @@ const App: React.FC = () => {
         <button id="editBtn" class="btn btn-edit" onclick="toggleEdit()">تفعيل التعديل</button>
         <button class="btn btn-print" onclick="window.print()">طباعة / حفظ PDF</button>
     </div>
-    
-    <div id="content-root">
-        ${pagesHTML}
-    </div>
-
+    <div id="content-root">${pagesHTML}</div>
     <script>
         function toggleEdit() {
             const root = document.getElementById('content-root');
@@ -141,17 +177,22 @@ const App: React.FC = () => {
             const btn = document.getElementById('editBtn');
             btn.innerText = !isEditable ? 'تعطيل التعديل (حفظ)' : 'تفعيل التعديل المباشر';
             btn.style.background = !isEditable ? '#ef4444' : '#1e3a8a';
-            
-            if(!isEditable) {
-                root.style.outline = "3px solid #3b82f6";
-                root.style.outlineOffset = "-3px";
-            } else {
-                root.style.outline = "none";
-            }
         }
     </script>
 </body>
 </html>`;
+  };
+
+  const handlePageSplit = (pageIndex: number, excessHtml: string) => {
+    const newPages = [...pages];
+    newPages.splice(pageIndex + 1, 0, {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'تكملة المادة',
+      content: excessHtml,
+      footer: brand.name,
+      isCover: false
+    });
+    setPages(newPages);
   };
 
   return (
@@ -159,9 +200,11 @@ const App: React.FC = () => {
       <Sidebar 
         brand={brand} setBrand={setBrand} onGenerate={() => setShowGenerateModal(true)}
         loading={loading} onExport={() => window.print()}
-        onAddPage={() => setPages([...pages, { id: Date.now().toString(), title: 'جديدة', content: '<p>اكتب هنا...</p>', footer: brand.name }])}
+        onAddPage={() => setPages([...pages, { id: Date.now().toString(), title: 'جديدة', content: '<p>اكتب هنا...</p>', footer: brand.name, isCover: false }])}
         onClear={() => confirm("مسح المذكرة؟") && setPages([])}
         onShowHTML={() => setShowHTMLModal(true)}
+        onCopyWord={copyForWord}
+        wordCopied={wordCopied}
       />
 
       <main className="flex-1 mr-80 p-6 overflow-y-auto h-screen bg-slate-200">
@@ -211,9 +254,6 @@ const App: React.FC = () => {
             <div className="p-6 border-b flex justify-between items-center">
               <h2 className="text-xl font-black">كود HTML التفاعلي</h2>
               <button onClick={() => setShowHTMLModal(false)} className="border-none bg-transparent cursor-pointer"><X size={24} /></button>
-            </div>
-            <div className="p-4 bg-blue-50 text-blue-700 text-xs font-bold border-b">
-              💡 الكود المستخرج يتضمن "شريط تحكم عائم" يسمح لك بتعديل المذكرة مباشرة في المتصفح أو طباعتها بسهولة.
             </div>
             <textarea readOnly className="flex-1 p-6 bg-slate-950 text-indigo-300 font-mono text-xs outline-none resize-none border-none" value={generateFullHTML()} />
             <div className="p-4 bg-slate-50 flex justify-end">
