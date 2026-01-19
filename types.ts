@@ -6,10 +6,14 @@ export interface BrandConfig {
   theme: ThemeType;
   primaryColor: string;
   secondaryColor: string;
-  logoUrl?: string;
+  watermarkUrl?: string; // Background brand image
+  phoneNumber?: string; // Contact number
   fontFamily: string;
   headerTopGap: number; // in mm
-  headerContentGap: number; // in mm
+  headerContentGap: number; // in mm (gap between header line and content start)
+  marginLeft: number; // in mm
+  marginRight: number; // in mm
+  marginBottom: number; // in mm
 }
 
 export interface NotePage {

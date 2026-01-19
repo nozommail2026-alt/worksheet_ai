@@ -1,14 +1,14 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { NotePage, BrandConfig } from '../types';
-import { THEMES } from '../constants';
+import { NotePage, BrandConfig } from './types';
+import { THEMES } from './constants';
 import { Bold, Award, Underline, Phone, Scissors } from 'lucide-react';
 
 interface PageEditorProps {
   page: NotePage;
   brand: BrandConfig;
   onUpdate: (updatedPage: NotePage) => void;
-  onSplit: (currentContent: string, excessHtml: string) => void;
+  onSplit: (excessHtml: string) => void;
   pageNumber: number;
 }
 
@@ -21,12 +21,14 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
       contentRef.current.innerHTML = page.content;
     }
     checkOverflow();
-  }, [page.id, page.content, brand.headerTopGap, brand.headerContentGap, brand.marginLeft, brand.marginRight, brand.marginBottom]);
+  }, [page.id, page.content, brand.headerTopGap, brand.headerContentGap]);
 
   const checkOverflow = () => {
     if (contentRef.current) {
+      // الارتفاع الافتراضي لصفحة A4 بالبكسل هو حوالي 1122px
+      // نترك مساحة للهيدر والفوتر والهوامش
       const baseThreshold = page.isCover ? 1000 : 920;
-      const spacingAdjustment = (brand.headerTopGap + brand.headerContentGap + brand.marginBottom) * 3.78;
+      const spacingAdjustment = (brand.headerTopGap + brand.headerContentGap) * 3.78;
       const threshold = baseThreshold - spacingAdjustment;
       
       const isOver = contentRef.current.scrollHeight > threshold; 
@@ -38,25 +40,27 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
     if (!contentRef.current || page.isCover) return;
     
     const container = contentRef.current;
+    // Fix: Explicitly cast children to HTMLElement[] to avoid 'unknown' type errors
     const children = Array.from(container.children) as HTMLElement[];
     
     if (children.length === 0) {
+      // إذا كان المحتوى نصاً فقط بدون وسوم HTML
       const fullText = container.innerHTML;
       const half = Math.floor(fullText.length / 2);
       const splitPoint = fullText.lastIndexOf(' ', half);
       const kept = fullText.substring(0, splitPoint);
       const remaining = fullText.substring(splitPoint);
       
-      onSplit(kept, remaining);
+      onUpdate({ ...page, content: kept });
+      onSplit(remaining);
       return;
     }
 
     let splitIndex = -1;
     let currentTotalHeight = 0;
-    const spacingAdjustment = (brand.headerTopGap + brand.headerContentGap + brand.marginBottom) * 3.78;
+    const spacingAdjustment = (brand.headerTopGap + brand.headerContentGap) * 3.78;
     const threshold = 900 - spacingAdjustment;
 
-    // البحث عن أول عنصر يتسبب في تجاوز حدود الصفحة
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
       const style = window.getComputedStyle(child);
@@ -70,31 +74,38 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
       }
     }
 
-    // إذا كان التجاوز يبدأ من أول عنصر، نرحل من العنصر الثاني للحفاظ على حد أدنى من المحتوى
-    if (splitIndex === 0 && children.length > 1) splitIndex = 1;
+    // إذا كان العنصر الأول وحده أطول من الصفحة
+    if (splitIndex === 0) splitIndex = 1;
     
-    // إذا لم نجد نقطة تجاوز واضحة بالبكسل ولكن هناك تجاوز مسجل، نأخذ آخر عنصرين
+    // إذا لم نجد نقطة تجاوز ولكن هناك تجاوز في الـ scrollHeight
     if (splitIndex === -1 && children.length > 1) {
-      splitIndex = children.length - 1;
+      splitIndex = Math.floor(children.length * 0.7);
     }
 
     if (splitIndex > 0 && splitIndex < children.length) {
+      // Fix: Access outerHTML on HTMLElement elements
       const kept = children.slice(0, splitIndex).map(el => el.outerHTML).join('');
       const remaining = children.slice(splitIndex).map(el => el.outerHTML).join('');
       
-      onSplit(kept, remaining);
+      // تحديث الصفحة الحالية بالمحتوى الذي تم إبقاؤه
+      onUpdate({ ...page, content: kept });
+      // إرسال المحتوى المتبقي لإنشاء صفحة جديدة
+      onSplit(remaining);
       setIsOverflowing(false);
     } else if (children.length === 1) {
-      // حالة خاصة: عنصر واحد ضخم جداً، نقسمه كنص
+      // حالة خاصة: عنصر واحد ضخم جداً، نقسمه كنص (تجريبي)
       const hugeEl = children[0];
+      // Fix: hugeEl is now HTMLElement, so innerHTML is accessible
       const html = hugeEl.innerHTML;
       const half = Math.floor(html.length / 2);
       const splitAt = html.indexOf(' ', half);
       if (splitAt !== -1) {
+        // Fix: hugeEl is now HTMLElement, so tagName is accessible
         const tag = hugeEl.tagName.toLowerCase();
         const kept = `<${tag}>${html.substring(0, splitAt)}</${tag}>`;
         const remaining = `<${tag}>${html.substring(splitAt)}</${tag}>`;
-        onSplit(kept, remaining);
+        onUpdate({ ...page, content: kept });
+        onSplit(remaining);
       }
     }
   };
@@ -119,7 +130,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
     return (
       <div 
         className="bg-white shadow-2xl mx-auto relative overflow-hidden page-container print:shadow-none print:my-0 flex flex-col items-center text-center"
-        style={{ width: '210mm', height: '297mm', padding: '15mm', fontFamily: brand.fontFamily }}
+        style={{ width: '210mm', height: '297mm', padding: '0', fontFamily: brand.fontFamily }}
       >
         <Watermark />
         <div className="w-full pt-[20mm] pb-[10mm] flex flex-col items-center relative z-10">
@@ -127,7 +138,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
           <div className="h-1 w-24 bg-indigo-600 rounded-full"></div>
         </div>
 
-        <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10">
+        <div className="flex-1 w-full px-[20mm] flex flex-col items-center justify-center relative z-10">
           {page.imageUrl && (
             <img 
               src={page.imageUrl} 
@@ -161,18 +172,11 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
   return (
     <div 
       className={`bg-white shadow-2xl mx-auto relative overflow-hidden page-container print:shadow-none print:my-0 flex flex-col group ${isOverflowing ? 'ring-2 ring-red-500' : ''}`}
-      style={{ 
-        width: '210mm', 
-        height: '297mm', 
-        paddingLeft: `${brand.marginLeft}mm`, 
-        paddingRight: `${brand.marginRight}mm`,
-        paddingTop: '5mm',
-        fontFamily: brand.fontFamily 
-      }}
+      style={{ width: '210mm', height: '297mm', padding: '0', fontFamily: brand.fontFamily }}
     >
       <Watermark />
       <div 
-        className="flex items-center justify-between px-2 py-2 border-b border-slate-50 bg-white/80 backdrop-blur-sm z-20 shrink-0"
+        className="flex items-center justify-between px-[12mm] py-2 border-b border-slate-50 bg-white/80 backdrop-blur-sm z-20 shrink-0"
         style={{ marginTop: `${brand.headerTopGap}mm` }}
       >
         <div className="flex items-center gap-2">
@@ -182,11 +186,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
       </div>
 
       <div 
-        className="flex-1 flex flex-col relative overflow-hidden z-10"
-        style={{ 
-          paddingTop: `${brand.headerContentGap}mm`, 
-          paddingBottom: '2mm'
-        }}
+        className="px-[12mm] flex-1 flex flex-col relative overflow-hidden z-10"
+        style={{ paddingTop: `${brand.headerContentGap}mm`, paddingBottom: '10mm' }}
       >
         <div className="no-print mb-2 flex items-center gap-2 p-1 bg-white border border-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity sticky top-0 z-50">
           <button onClick={() => execCommand('bold')} className="p-1 hover:bg-slate-50 rounded"><Bold size={11} /></button>
@@ -217,7 +218,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
         </div>
 
         {isOverflowing && (
-          <div className="no-print absolute bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-xl animate-pulse">
+          <div className="no-print absolute bottom-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-xl animate-pulse">
             <span className="text-[9px] font-black uppercase tracking-widest">محتوى زائد</span>
             <button 
               onClick={(e) => {
@@ -226,12 +227,12 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, brand, onUpdate, onSplit,
               }} 
               className="bg-white text-red-600 px-3 py-1 rounded font-black text-[10px] cursor-pointer hover:bg-slate-100 transition-colors flex items-center gap-1 border-none shadow-md active:scale-95"
             >
-                <Scissors size={10} /> ترحيل الزائد
+                <Scissors size={10} /> ترحيل
             </button>
           </div>
         )}
 
-        <div className="mt-auto pt-1 border-t border-slate-100 flex justify-between items-center opacity-40 relative z-10" style={{ marginBottom: `${brand.marginBottom}mm` }}>
+        <div className="mt-auto pt-1 border-t border-slate-100 flex justify-between items-center opacity-40 relative z-10">
            <div className="text-[8px] font-bold text-slate-400 flex items-center gap-4">
              {brand.phoneNumber && <span className="direction-ltr">📞 {brand.phoneNumber}</span>}
            </div>
